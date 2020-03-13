@@ -1,7 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/matkinhig/go-topup/server"
+)
 
 func main() {
 	fmt.Println("Start golang...")
+	server.Run()
 }
