@@ -7,6 +7,7 @@ import (
 
 	"github.com/matkinhig/go-topup/config"
 	"github.com/matkinhig/go-topup/router"
+	_ "github.com/mattn/go-oci8"
 )
 
 func Run() {

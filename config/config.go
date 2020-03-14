@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/joho/godotenv"
+	_ "github.com/mattn/go-oci8"
 )
 
 var (
