@@ -1,19 +1,31 @@
 package models
 
-import "time"
+import (
+	"time"
+)
+
+type Nulltime struct {
+	Time  time.Time
+	Valid bool
+}
+
+func (nt *Nulltime) Scan(value interface{}) error {
+	nt.Time, nt.Valid = value.(time.Time)
+	return nil
+}
 
 type Data struct {
-	Euser_Id          string    `json:"Euser_Id"`
-	Customer_Fullname string    `json:"Customer_Fullname"`
-	Lottery_Code      string    `json:"Lottery_Code"`
-	Account_Deposit   string    `json:"Account_Deposit"`
-	Opened_Date       time.Time `json:"Opened_Date"`
-	Closed_Date       time.Time `json:"Closed_Date"`
-	Status            string    `json:"Status"`
-	Amount            float64   `json:"Amount"`
-	Term              string    `json:"Term"`
-	Open_Award        int8      `json:"Open_Award"`
-	Phone_Number      string    `json:"Phone_Number"`
+	Euser_Id          string    `db:"EUSER_ID" json:"Euser_Id"`
+	Customer_Fullname string    `db:"CUSTOMER_FULLNAME" json:"Customer_Fullname"`
+	Lottery_Code      string    `db:"LOTTERY_CODE" json:"Lottery_Code"`
+	Account_Deposit   string    `db:"ACCOUNT_DEPOSIT" json:"Account_Deposit"`
+	Opened_Date       time.Time `db:"OPENED_DATE" json:"Opened_Date"`
+	Closed_Date       Nulltime  `db:"CLOSED_DATE" json:"Closed_Date"`
+	Status            string    `db:"STATUS" json:"Status"`
+	Amount            float64   `db:"AMOUNT" json:"Amount"`
+	Term              string    `db:"TERM" json:"Term"`
+	Open_Award        int8      `db:"OPEN_AWARD" json:"Open_Award"`
+	Phone_Number      string    `db:"PHONE_NUMBER" json:"Phone_Number"`
 }
 
 type DepositRepository struct {

@@ -1,13 +1,12 @@
 package database
 
 import (
-	"database/sql"
-
+	"github.com/jmoiron/sqlx"
 	"github.com/matkinhig/go-topup/config"
 )
 
-func Connect() (*sql.DB, error) {
-	db, err := sql.Open(config.DBDRIVER, config.DBURL)
+func Connect() (*sqlx.DB, error) {
+	db, err := sqlx.Open(config.DBDRIVER, config.DBURL)
 	if err != nil {
 		return nil, err
 	}

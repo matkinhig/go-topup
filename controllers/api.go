@@ -1,12 +1,12 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"reflect"
 
+	_ "github.com/jmoiron/sqlx"
 	"github.com/matkinhig/go-topup/database"
+	"github.com/matkinhig/go-topup/models"
 	"github.com/matkinhig/go-topup/responses"
 	_ "github.com/mattn/go-oci8"
 )
@@ -19,40 +19,50 @@ func DepositHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 	sql := "Select * from HALONG.VB_DEPOSIT_AWARD"
-	rows, err := db.Query(sql)
+	rows, err := db.Queryx(sql)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	cols, err := rows.Columns()
-	if err != nil {
-		responses.ERROR(w, http.StatusUnprocessableEntity, err)
-		return
-	}
-	fmt.Printf("%t", reflect.TypeOf(cols))
-	fmt.Println(cols)
-	var store []map[string]interface{}
+	data := models.Data{}
 	for rows.Next() {
-		columns := make([]interface{}, len(cols))
-		columnsPointer := make([]interface{}, len(cols))
-		for i, _ := range columns {
-			columnsPointer[i] = &columns[i]
-		}
-		if err = rows.Scan(columnsPointer...); err != nil {
+		err := rows.StructScan(&data)
+		if err != nil {
+			fmt.Println(err)
 			responses.ERROR(w, http.StatusPartialContent, err)
 			return
 		}
-		m := make(map[string]interface{})
-		for i, colName := range cols {
-			val := columnsPointer[i].(*interface{})
-			m[colName] = *val
-		}
-		store = append(store, m)
+		fmt.Println(data)
 	}
-	// data := []models.Data{}
-	// json.Unmarshal(store, &data)
-	js, _ := json.Marshal(store)
-	fmt.Println(js)
+	// cols, err := rows.Columns()
+	// if err != nil {
+	// 	responses.ERROR(w, http.StatusUnprocessableEntity, err)
+	// 	return
+	// }
+	// fmt.Printf("%t", reflect.TypeOf(cols))
+	// fmt.Println(cols)
+	// var store []map[string]interface{}
+	// for rows.Next() {
+	// 	columns := make([]interface{}, len(cols))
+	// 	columnsPointer := make([]interface{}, len(cols))
+	// 	for i, _ := range columns {
+	// 		columnsPointer[i] = &columns[i]
+	// 	}
+	// 	if err = rows.Scan(columnsPointer...); err != nil {
+	// 		responses.ERROR(w, http.StatusPartialContent, err)
+	// 		return
+	// 	}
+	// 	m := make(map[string]interface{})
+	// 	for i, colName := range cols {
+	// 		val := columnsPointer[i].(*interface{})
+	// 		m[colName] = *val
+	// 	}
+	// 	store = append(store, m)
+	// }
+	// // data := []models.Data{}
+	// // json.Unmarshal(store, &data)
+	// js, _ := json.Marshal(store)
+	// fmt.Println(js)
 	// db, err := database.Connect()
 	// if err != nil {
 	// 	responses.ERROR(w, http.StatusInternalServerError, err)
