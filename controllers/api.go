@@ -18,12 +18,29 @@ func DepositHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-
-	rows, err := db.Queryx(`select * from HALONG.VB_DEPOSIT_AWARD where customer_id= :custid`, "003834512")
+	data := models.Data{}
+	stmt, err := db.Preparex(`select * from HALONG.VB_DEPOSIT_AWARD where customer_id= :custid and lottery_code= :lottery_code`)
 	if err != nil {
 		fmt.Println(err)
 	}
-	data := models.Data{}
+	rows, err := stmt.Queryx("003834512", "209165")
+	if err != nil {
+		fmt.Println(err)
+	}
+	for rows.Next() {
+		err := rows.StructScan(&data)
+		if err != nil {
+			fmt.Println(err)
+			responses.ERROR(w, http.StatusPartialContent, err)
+			return
+		}
+		fmt.Println(data)
+	}
+
+	rows, err = db.Queryx(`select * from HALONG.VB_DEPOSIT_AWARD where customer_id= :custid and lottery_code= :lottery_code`, "003834512", "209165")
+	if err != nil {
+		fmt.Println(err)
+	}
 	for rows.Next() {
 		err := rows.StructScan(&data)
 		if err != nil {
