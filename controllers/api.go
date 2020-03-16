@@ -18,11 +18,10 @@ func DepositHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	sql := "Select * from HALONG.VB_DEPOSIT_AWARD"
-	rows, err := db.Queryx(sql)
+
+	rows, err := db.Queryx(`select * from HALONG.VB_DEPOSIT_AWARD where customer_id= :custid`, "003834512")
 	if err != nil {
-		responses.ERROR(w, http.StatusUnprocessableEntity, err)
-		return
+		fmt.Println(err)
 	}
 	data := models.Data{}
 	for rows.Next() {

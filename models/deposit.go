@@ -26,6 +26,7 @@ type Data struct {
 	Term              string    `db:"TERM" json:"Term"`
 	Open_Award        int8      `db:"OPEN_AWARD" json:"Open_Award"`
 	Phone_Number      string    `db:"PHONE_NUMBER" json:"Phone_Number"`
+	Customer_Id       string    `db:"CUSTOMER_ID" json:"customer_id"`
 }
 
 type DepositRepository struct {
