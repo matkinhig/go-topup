@@ -1,138 +1,62 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	_ "github.com/jmoiron/sqlx"
 	"github.com/matkinhig/go-topup/database"
 	"github.com/matkinhig/go-topup/models"
+	"github.com/matkinhig/go-topup/repository"
 	"github.com/matkinhig/go-topup/responses"
+	"github.com/matkinhig/go-topup/routine"
 	_ "github.com/mattn/go-oci8"
 )
 
 func DepositHandler(w http.ResponseWriter, r *http.Request) {
-	db, err := database.Connect()
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		fmt.Println(err)
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
+	requestGet := models.RequestGet{}
+	err = json.Unmarshal(body, &requestGet)
+	if err != nil {
+		fmt.Println(err)
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	err = requestGet.Validate()
+	if err != nil {
+		fmt.Println(err)
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	db, err := database.Connect()
 	defer db.Close()
-	data := models.Data{}
-	stmt, err := db.Preparex(`select * from HALONG.VB_DEPOSIT_AWARD where customer_id= :custid and lottery_code= :lottery_code`)
 	if err != nil {
 		fmt.Println(err)
-	}
-	rows, err := stmt.Queryx("003834512", "209165")
-	if err != nil {
-		fmt.Println(err)
-	}
-	for rows.Next() {
-		err := rows.StructScan(&data)
-		if err != nil {
-			fmt.Println(err)
-			responses.ERROR(w, http.StatusPartialContent, err)
-			return
-		}
-		fmt.Println(data)
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
 	}
 
-	rows, err = db.Queryx(`select * from HALONG.VB_DEPOSIT_AWARD where customer_id= :custid and lottery_code= :lottery_code`, "003834512", "209165")
-	if err != nil {
-		fmt.Println(err)
-	}
-	for rows.Next() {
-		err := rows.StructScan(&data)
+	thread := routine.NewAPIRoutine(db)
+	func(getRepo repository.ApiRepository) {
+		respGet, err := getRepo.FindByCustID(&requestGet)
 		if err != nil {
 			fmt.Println(err)
-			responses.ERROR(w, http.StatusPartialContent, err)
+			responses.ERROR(w, http.StatusBadRequest, err)
 			return
 		}
-		fmt.Println(data)
-	}
-	// cols, err := rows.Columns()
-	// if err != nil {
-	// 	responses.ERROR(w, http.StatusUnprocessableEntity, err)
-	// 	return
-	// }
-	// fmt.Printf("%t", reflect.TypeOf(cols))
-	// fmt.Println(cols)
-	// var store []map[string]interface{}
-	// for rows.Next() {
-	// 	columns := make([]interface{}, len(cols))
-	// 	columnsPointer := make([]interface{}, len(cols))
-	// 	for i, _ := range columns {
-	// 		columnsPointer[i] = &columns[i]
-	// 	}
-	// 	if err = rows.Scan(columnsPointer...); err != nil {
-	// 		responses.ERROR(w, http.StatusPartialContent, err)
-	// 		return
-	// 	}
-	// 	m := make(map[string]interface{})
-	// 	for i, colName := range cols {
-	// 		val := columnsPointer[i].(*interface{})
-	// 		m[colName] = *val
-	// 	}
-	// 	store = append(store, m)
-	// }
-	// // data := []models.Data{}
-	// // json.Unmarshal(store, &data)
-	// js, _ := json.Marshal(store)
-	// fmt.Println(js)
-	// db, err := database.Connect()
-	// if err != nil {
-	// 	responses.ERROR(w, http.StatusInternalServerError, err)
-	// 	return
-	// }
-	// defer db.Close()
-	// rows, err := db.Query("Select * from HALONG.VB_DEPOSIT_AWARD")
-	// if err != nil {
-	// 	responses.ERROR(w, http.StatusInternalServerError, err)
-	// 	return
-	// }
-	// cols, err := rows.Columns()
-	// if err != nil {
-	// 	responses.ERROR(w, http.StatusInternalServerError, err)
-	// 	return
-	// }
-	// fmt.Println(cols)
-	// store := []map[string]interface{}
-	// for rows.Next() {
-	// 	columns := make([]interface{}, len(cols))
-	// 	columnPointers := make([]interface{}, len(cols))
-	// 	for i, _ := range columns {
-	// 		columnPointers[i] = &columns[i]
-	// 	}
-	// 	if err := rows.Scan(columnPointers...); err != nil {
-	// 		responses.ERROR(w, http.StatusInternalServerError, err)
-	// 		return
-	// 	}
-	// 	m := make(map[string]interface{})
-	// 	for i, colName := range cols {
-	// 		val := columnPointers[i].(*interface{})
-	// 		m[colName] = *val
-	// 	}
-	// 	store = append(store, m)
-	// }
-	// js, _ := json.Marshal(store)
-	// fmt.Println(string(js))
-
-	// db, err := sql.Open(config.DBDRIVER, config.DBURL)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// println("Connection succcess!!")
-	// rows, err := db.Query("SELECT sysdate FROM dual")
-	// if err != nil {
-	// 	log.Fatalln("err:", err.Error)
-	// }
-	// var (
-	// 	sysdate string
-	// )
-	// for rows.Next() {
-	// 	if err = rows.Scan(&sysdate); err != nil {
-	// 		log.Fatalln("error fetching", err)
-	// 	}
-	// 	log.Println(sysdate)
-	// }
+		respGet.Description = "Success"
+		respGet.ResponseCode = strconv.Itoa(http.StatusOK)
+		responses.JSON(w, http.StatusOK, &respGet)
+		return
+	}(thread)
 }
