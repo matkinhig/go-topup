@@ -4,7 +4,7 @@ import "errors"
 
 type RequestGet struct {
 	AbstractModel
-	Data DataGet
+	Data DataGet `json:"Data"`
 }
 
 type DataGet struct {
