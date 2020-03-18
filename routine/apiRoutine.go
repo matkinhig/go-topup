@@ -28,13 +28,8 @@ func (a *apiRoutine) FindByCustID(resGet *models.RequestGet) (*models.ResponseQu
 	custid := resGet.Data.CustomerID
 	go func(ch chan<- bool) {
 		defer close(ch)
-		db, err := a.db.Beginx()
 		defer a.db.Close()
-		if err != nil {
-			ch <- false
-			return
-		}
-		stmt, err := db.Preparex(`select * from HALONG.VB_DEPOSIT_AWARD where customer_id= :custid`)
+		stmt, err := a.db.Preparex(`select * from HALONG.VB_DEPOSIT_AWARD where customer_id= :custid`)
 		defer stmt.Close()
 		if err != nil {
 			ch <- false
@@ -63,7 +58,7 @@ func (a *apiRoutine) FindByCustID(resGet *models.RequestGet) (*models.ResponseQu
 	if len(respGet.Data) < 1 {
 		return &respGet, errors.New("Cant Find Any Customer")
 	}
-	return &respGet, nil
+	return nil, errors.New("Unprocess")
 }
 
 func (a *apiRoutine) CreateDeposit(resPost *models.RequestPost) (*models.ResponseCreate, error) {
@@ -88,14 +83,10 @@ func (a *apiRoutine) CreateDeposit(resPost *models.RequestPost) (*models.Respons
 		data.Amount = resPost.Data.Amount
 		data.Term = resPost.Data.Term
 		data.Open_Award = 1
-		data.Phone_Number = resPost.Data.CustomerFullname
+		data.Phone_Number = resPost.Data.PhoneNumber
 		data.Customer_Id = resPost.Data.CustomerID
-		db := a.db.MustBegin()
-		defer a.db.Close()
-		if err != nil {
-			ch <- false
-			return
-		}
+		db := a.db
+		defer db.Close()
 		sql := `INSERT INTO HALONG.VB_DEPOSIT_AWARD 
 		(Euser_Id,Customer_Fullname,Lottery_Code,Account_Deposit,Opened_Date,Status,Amount,Term,Open_Award,Phone_Number,customer_id) VALUES
 		(:Euser_Id, :Customer_Fullname, :Lottery_Code, :Account_Deposit, :Opened_Date, :Status, :Amount, :Term, :Open_Award, :Phone_Number, :Customer_Id)`
@@ -103,18 +94,17 @@ func (a *apiRoutine) CreateDeposit(resPost *models.RequestPost) (*models.Respons
 			data.Euser_Id, data.Customer_Fullname, data.Lottery_Code,
 			data.Account_Deposit, data.Opened_Date, data.Status,
 			data.Amount, data.Term, data.Open_Award, data.Phone_Number, data.Customer_Id)
-		fmt.Println(err)
 		if err != nil {
 			ch <- false
 			return
 		}
-		err = db.Commit()
+		i, err := rs.RowsAffected()
 		if err != nil {
 			ch <- false
 			return
 		}
-		_, err = rs.RowsAffected()
-		if err != nil {
+		if i < 1 {
+			err = errors.New("Cant Create The Account Deposit, please try again later")
 			ch <- false
 			return
 		}
@@ -122,6 +112,41 @@ func (a *apiRoutine) CreateDeposit(resPost *models.RequestPost) (*models.Respons
 	}(done)
 	if channels.OK(done) {
 		return &respPost, nil
+	}
+	return nil, err
+}
+
+func (a *apiRoutine) UpdateDeposit(resUpdate *models.RequestUpdate) (*models.ResponseUpdate, error) {
+	var err error
+	respUpdate := models.ResponseUpdate{}
+	respUpdate.Function = resUpdate.Function
+	done := make(chan bool)
+	go func(ch chan<- bool) {
+		defer close(ch)
+		db := a.db
+		defer db.Close()
+		sql := `UPDATE HALONG.VB_DEPOSIT_AWARD SET CLOSED_DATE=:tm, AMOUNT=:am, OPEN_AWARD=:ow WHERE CUSTOMER_ID=:custid and ACCOUNT_DEPOSIT=:accde`
+		rs, err := db.Exec(sql,
+			time.Now(), 0, 0, resUpdate.Data.CustomerId, resUpdate.Data.AccountDeposit)
+		if err != nil {
+			ch <- false
+			return
+		}
+		i, err := rs.RowsAffected()
+		if err != nil {
+			ch <- false
+			return
+		}
+		if i < 1 {
+			err = errors.New("Cant Update The Account Deposit, please try again later")
+			ch <- false
+			return
+		}
+		fmt.Println(i)
+		ch <- true
+	}(done)
+	if channels.OK(done) {
+		return &respUpdate, nil
 	}
 	return nil, err
 }

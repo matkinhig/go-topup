@@ -1,6 +1,6 @@
 package models
 
 type Result struct {
-	LotteryCode string `json:"LotteryCode"`
-	CustomerId  string `json:"CustomerId"`
+	AccountDeposit string `json:"AccountDeposit"`
+	CustomerId     string `json:"CustomerId"`
 }

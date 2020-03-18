@@ -122,18 +122,38 @@ func createDepositAward(requestPost models.RequestPost, w http.ResponseWriter) {
 		resPost, err := postRepo.CreateDeposit(&requestPost)
 		if err != nil {
 			fmt.Println(err)
-			responses.ERROR(w, http.StatusInternalServerError, err)
+			responses.ERROR(w, http.StatusUnprocessableEntity, err)
 			return
 		}
 		resPost.Description = "Success"
 		resPost.ResponseCode = http.StatusOK
 		resPost.Data.CustomerId = requestPost.Data.CustomerID
-		resPost.Data.LotteryCode = requestPost.Data.AccountDeposit
+		resPost.Data.AccountDeposit = requestPost.Data.AccountDeposit
 		responses.JSON(w, http.StatusOK, &resPost)
 		return
 	}(thread)
 }
 
 func updateDepositAward(requestUpdate models.RequestUpdate, w http.ResponseWriter) {
-
+	db, err := database.Connect()
+	defer db.Close()
+	if err != nil {
+		fmt.Println(err)
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+	thread := routine.NewAPIRoutine(db)
+	func(putRepo repository.ApiRepository) {
+		resUpdate, err := putRepo.UpdateDeposit(&requestUpdate)
+		if err != nil {
+			fmt.Println(err)
+			responses.ERROR(w, http.StatusUnprocessableEntity, err)
+			return
+		}
+		resUpdate.Description = "Success"
+		resUpdate.ResponseCode = http.StatusOK
+		resUpdate.Data.CustomerId = requestUpdate.Data.CustomerId
+		resUpdate.Data.AccountDeposit = requestUpdate.Data.AccountDeposit
+		responses.JSON(w, http.StatusOK, &resUpdate)
+	}(thread)
 }

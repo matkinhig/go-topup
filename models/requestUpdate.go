@@ -10,7 +10,6 @@ type RequestUpdate struct {
 type DataUpdate struct {
 	CustomerId     string `json:"CustomerId"`
 	AccountDeposit string `json:"AccountDeposit"`
-	UpdatedDate    string `json:"UpdatedDate"`
 }
 
 func (r *RequestUpdate) Validate() error {
@@ -28,9 +27,6 @@ func (r *RequestUpdate) Validate() error {
 	}
 	if r.Data.AccountDeposit == "" {
 		return errors.New("Required AccountDeposit")
-	}
-	if r.Data.UpdatedDate == "" {
-		return errors.New("Required UpdatedDate")
 	}
 	return nil
 }
